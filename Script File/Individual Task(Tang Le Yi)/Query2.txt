@@ -1,0 +1,51 @@
+--Query2:VIP Membership Subscription Overview
+
+-- View
+CREATE OR REPLACE VIEW vw_vip_subscription_overview AS
+SELECT
+    v.member_id,
+    m.member_name,
+    m.member_type,
+    v.payment_id,
+    p.payment_method,
+    v.amount,
+    v.payment_date,
+    v.start_date,
+    v.end_date
+FROM vip_subscription v
+JOIN member m
+    ON v.member_id = m.member_id
+JOIN payment p
+    ON v.payment_id = p.payment_id;
+/
+
+SET LINESIZE 130
+SET PAGESIZE 120
+
+TTITLE LEFT '==========================================================================================================================' SKIP 1 -
+       LEFT '					VIP MEMBERSHIP SUBSCRIPTION OVERVIEW' SKIP 1 -
+       LEFT '=========================================================================================================================='
+
+COLUMN member_id         FORMAT A10 HEADING 'Member ID'
+COLUMN member_name       FORMAT A20 HEADING 'Member Name'
+COLUMN member_type       FORMAT A10 HEADING 'Type'
+COLUMN payment_id        FORMAT A10 HEADING 'Payment ID'
+COLUMN payment_method    FORMAT A18 HEADING 'Payment Method'
+COLUMN amount            FORMAT 9999.99 HEADING 'Amount'
+COLUMN payment_date      FORMAT A12 HEADING 'Payment Date'
+COLUMN start_date        FORMAT A12 HEADING 'Start Date'
+COLUMN end_date          FORMAT A12 HEADING 'End Date'
+
+SELECT
+    member_id,
+    member_name,
+    member_type,
+    payment_id,
+    payment_method,
+    amount,
+    TO_CHAR(payment_date, 'YYYY-MM-DD') AS payment_date,
+    TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+    TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date
+FROM vw_vip_subscription_overview
+WHERE member_type = 'VIP'
+ORDER BY start_date;

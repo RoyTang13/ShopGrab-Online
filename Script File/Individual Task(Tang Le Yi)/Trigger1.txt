@@ -1,0 +1,54 @@
+--Trigger1: Check overlapping VIP subscription member
+
+--index
+CREATE INDEX idx_vip_sub_member
+ON vip_subscription(member_id);
+
+CREATE OR REPLACE TRIGGER trg_check_vip_overlap
+BEFORE INSERT OR UPDATE ON vip_subscription
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    -- Check overlapping subscription
+    SELECT COUNT(*)
+    INTO v_count
+    FROM vip_subscription v
+    WHERE v.member_id = :NEW.member_id
+    AND (
+        :NEW.start_date <= v.end_date
+        AND :NEW.end_date >= v.start_date
+    )
+    -- Exclude same record when updating
+    AND NOT (
+        v.member_id = :NEW.member_id
+        AND v.payment_id = :NEW.payment_id
+    );
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(
+            -20020,
+            'Overlapping VIP subscription is not allowed.'
+        );
+    END IF;
+END;
+/
+
+--Testing Purpose Only 
+INSERT INTO payment VALUES (
+    'P998',
+    'TNG',
+    6,
+    SYSDATE,
+    'SUCCESS'
+);
+
+INSERT INTO vip_subscription VALUES (
+    'M001',
+    'P998',
+    100,
+    SYSDATE,
+    DATE '2026-01-15',
+    DATE '2026-02-15'
+);
+

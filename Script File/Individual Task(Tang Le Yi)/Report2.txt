@@ -1,0 +1,96 @@
+--Report 2:   VIP Subscription Revenue Report by Payment Method 
+SET SERVEROUTPUT ON;
+
+CREATE OR REPLACE PROCEDURE rpt_vip_revenue
+IS
+    CURSOR c_method IS
+        SELECT DISTINCT p.payment_method
+        FROM vip_subscription v
+        JOIN payment p
+            ON v.payment_id = p.payment_id
+        ORDER BY p.payment_method;
+
+    CURSOR c_subscription (p_method payment.payment_method%TYPE) IS
+        SELECT v.member_id,
+               m.member_name,
+               v.payment_id,
+               v.amount,
+               v.payment_date,
+               v.start_date,
+               v.end_date
+        FROM vip_subscription v
+        JOIN member m
+            ON v.member_id = m.member_id
+        JOIN payment p
+            ON v.payment_id = p.payment_id
+        WHERE p.payment_method = p_method
+        ORDER BY v.payment_date, v.member_id;
+
+    v_method_sub_count   NUMBER := 0;
+    v_method_subtotal    NUMBER(10,2) := 0;
+
+    v_total_methods      NUMBER := 0;
+    v_total_subs         NUMBER := 0;
+    v_grand_total        NUMBER(10,2) := 0;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('===================================================================================================');
+    DBMS_OUTPUT.PUT_LINE('                 VIP SUBSCRIPTION REVENUE REPORT BY PAYMENT METHOD');
+    DBMS_OUTPUT.PUT_LINE('===================================================================================================');
+
+    FOR rec_method IN c_method LOOP
+        v_total_methods := v_total_methods + 1;
+        v_method_sub_count := 0;
+        v_method_subtotal := 0;
+
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Payment Method : ' || rec_method.payment_method);
+        DBMS_OUTPUT.PUT_LINE('---------------------------------------------------------------------------------------------------');
+        DBMS_OUTPUT.PUT_LINE(
+            RPAD('Member ID', 12) ||
+            RPAD('Member Name', 22) ||
+            RPAD('Payment ID', 12) ||
+            RPAD('Amount', 12) ||
+            RPAD('Pay Date', 15) ||
+            RPAD('Start Date', 15) ||
+            RPAD('End Date', 15)
+        );
+        DBMS_OUTPUT.PUT_LINE('---------------------------------------------------------------------------------------------------');
+
+        FOR rec_sub IN c_subscription(rec_method.payment_method) LOOP
+            v_method_sub_count := v_method_sub_count + 1;
+            v_total_subs := v_total_subs + 1;
+            v_method_subtotal := v_method_subtotal + rec_sub.amount;
+            v_grand_total := v_grand_total + rec_sub.amount;
+
+            DBMS_OUTPUT.PUT_LINE(
+                RPAD(rec_sub.member_id, 12) ||
+                RPAD(rec_sub.member_name, 22) ||
+                RPAD(rec_sub.payment_id, 12) ||
+                RPAD('RM ' || TO_CHAR(rec_sub.amount, 'FM9990.00'), 12) ||
+                RPAD(TO_CHAR(rec_sub.payment_date, 'YYYY-MM-DD'), 15) ||
+                RPAD(TO_CHAR(rec_sub.start_date, 'YYYY-MM-DD'), 15) ||
+                RPAD(TO_CHAR(rec_sub.end_date, 'YYYY-MM-DD'), 15)
+            );
+        END LOOP;
+
+        DBMS_OUTPUT.PUT_LINE('---------------------------------------------------------------------------------------------------');
+        DBMS_OUTPUT.PUT_LINE('Subscription Count for Method : ' || v_method_sub_count);
+        DBMS_OUTPUT.PUT_LINE('Subtotal Revenue              : RM ' || TO_CHAR(v_method_subtotal, 'FM9999990.00'));
+        DBMS_OUTPUT.PUT_LINE('===================================================================================================');
+    END LOOP;
+
+    DBMS_OUTPUT.PUT_LINE(CHR(10) || '************************ REPORT SUMMARY ************************');
+    DBMS_OUTPUT.PUT_LINE('Total Payment Methods Used    : ' || v_total_methods);
+    DBMS_OUTPUT.PUT_LINE('Total Subscription Records    : ' || v_total_subs);
+    DBMS_OUTPUT.PUT_LINE('Grand Total VIP Revenue       : RM ' || TO_CHAR(v_grand_total, 'FM9999990.00'));
+    DBMS_OUTPUT.PUT_LINE('****************************************************************');
+
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error in rpt_vip_revenue: ' || SQLERRM);
+END;
+/
+
+BEGIN
+    rpt_vip_revenue;
+END;
+/

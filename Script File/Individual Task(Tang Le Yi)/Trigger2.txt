@@ -1,0 +1,45 @@
+--Trigger2:Automatically Set Member Type to VIP
+CREATE OR REPLACE TRIGGER trg_set_member_vip
+AFTER INSERT ON vip_subscription
+FOR EACH ROW
+BEGIN
+    UPDATE member
+    SET member_type = 'VIP'
+    WHERE member_id = :NEW.member_id;
+END;
+/
+
+--For testing only
+SET SERVEROUTPUT ON;
+
+BEGIN
+    add_new_member_validation(
+        'M999',
+        'Test User John',
+        'johntest@gmail.com',
+        '+6012-3456755',
+        'NORMAL'
+    );
+END;
+/
+
+INSERT INTO payment VALUES (
+    'P950',
+    'TNG',
+    6,
+    SYSDATE,
+    'SUCCESS'
+);
+
+INSERT INTO vip_subscription VALUES (
+    'M999',
+    'P950',
+    6,
+    SYSDATE,
+    DATE '2026-05-01',
+    DATE '2026-06-01'
+);
+
+SELECT member_id,member_name, member_type
+FROM member
+WHERE member_id = 'M999';

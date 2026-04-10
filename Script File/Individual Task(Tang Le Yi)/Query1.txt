@@ -1,0 +1,56 @@
+--Query1: Delivery Orders with Rider Details
+
+--index
+CREATE INDEX idx_orders_delivery
+ON orders(delivery_id);
+
+--View
+CREATE OR REPLACE VIEW vw_delivery_orders_rider AS
+SELECT 
+    o.orders_id,
+    o.orders_date,
+    o.orders_amount,
+    o.orders_type,
+    m.member_id,
+    m.member_name,
+    d.delivery_id,
+    d.driver_name,
+    d.car_plate_no,
+    dc.delivery_company_id,
+    dc.delivery_name
+FROM orders o
+JOIN member m
+    ON o.member_id = m.member_id
+JOIN delivery d
+    ON o.delivery_id = d.delivery_id
+JOIN delivery_company dc
+    ON d.delivery_company_id = dc.delivery_company_id
+WHERE o.orders_type = 'DELIVERY';
+/
+
+--Delivery Orders with Rider Details
+SET LINESIZE 130
+SET PAGESIZE 120
+
+TTITLE LEFT '==========================================================================================================================' SKIP 1 -
+       LEFT '					DELIVERY ORDERS WITH RIDER DETAILS' SKIP 1 -
+       LEFT '=========================================================================================================================='
+
+COLUMN orders_id        FORMAT A10 HEADING 'Order ID'
+COLUMN orders_date      FORMAT A15 HEADING 'Order Date'
+COLUMN member_name      FORMAT A20 HEADING 'Customer'
+COLUMN driver_name      FORMAT A20 HEADING 'Rider Name'
+COLUMN car_plate_no     FORMAT A12 HEADING 'Car Plate'
+COLUMN delivery_name    FORMAT A30 HEADING 'Company'
+COLUMN orders_amount    FORMAT 9999.99 HEADING 'Amount'
+
+SELECT 
+    orders_id,
+    TO_CHAR(orders_date, 'YYYY-MM-DD') AS orders_date,
+    member_name,
+    driver_name,
+    car_plate_no,
+    delivery_name,
+    orders_amount
+FROM vw_delivery_orders_rider
+ORDER BY orders_date;

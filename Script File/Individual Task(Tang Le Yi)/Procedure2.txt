@@ -1,0 +1,33 @@
+--Procedure2:Check VIP Expiry and Downgrade Member
+
+
+CREATE OR REPLACE PROCEDURE check_vip_expiry_downgrade
+IS
+BEGIN
+    -- Update expired VIP members
+    UPDATE member m
+    SET m.member_type = 'NORMAL'
+    WHERE m.member_type = 'VIP'
+    AND EXISTS (
+        SELECT 1
+        FROM vip_subscription v
+        WHERE v.member_id = m.member_id
+        AND v.end_date < SYSDATE
+    );
+
+    DBMS_OUTPUT.PUT_LINE('Expired VIP members downgraded successfully.');
+
+END;
+/
+
+--Testing Purpose only
+SET SERVEROUTPUT ON;
+
+BEGIN
+    check_vip_expiry_downgrade;
+END;
+/
+
+SELECT Member_id,Member_name,Member_type
+FROM member
+WHERE member_id= 'M002';

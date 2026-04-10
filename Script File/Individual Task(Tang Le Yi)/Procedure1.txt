@@ -1,0 +1,117 @@
+--Procedure 1: Add New Member with Validation 
+
+--Sequence: 
+CREATE SEQUENCE seq_member_id
+START WITH 1000
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE OR REPLACE PROCEDURE add_new_member_validation (
+    p_member_id      IN member.member_id%TYPE,
+    p_member_name    IN member.member_name%TYPE,
+    p_member_email   IN member.member_email%TYPE,
+    p_phone          IN member.phone%TYPE,
+    p_member_type    IN member.member_type%TYPE
+)
+IS
+    v_count NUMBER;
+BEGIN
+    -- Validate member ID
+    IF p_member_id IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Member ID cannot be NULL.');
+    END IF;
+
+    -- Check duplicate member ID
+    SELECT COUNT(*)
+    INTO v_count
+    FROM member
+    WHERE member_id = p_member_id;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Member ID already exists.');
+    END IF;
+
+    -- Validate member name
+    IF p_member_name IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Member name cannot be NULL.');
+    END IF;
+
+    -- Validate email
+    IF p_member_email IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Member email cannot be NULL.');
+    ELSIF NOT REGEXP_LIKE(p_member_email, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$') THEN
+        RAISE_APPLICATION_ERROR(-20005, 'Invalid email format.');
+    END IF;
+
+    -- Check duplicate email
+    SELECT COUNT(*)
+    INTO v_count
+    FROM member
+    WHERE member_email = p_member_email;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20006, 'Email already exists.');
+    END IF;
+
+    -- Validate phone
+    IF p_phone IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20007, 'Phone number cannot be NULL.');
+    ELSIF NOT REGEXP_LIKE(p_phone, '^\+601[0-9]-[0-9]{7,8}$') THEN
+        RAISE_APPLICATION_ERROR(-20008, 'Invalid phone format. Example: +6012-3456789');
+    END IF;
+
+    -- Check duplicate phone
+    SELECT COUNT(*)
+    INTO v_count
+    FROM member
+    WHERE phone = p_phone;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20009, 'Phone number already exists.');
+    END IF;
+
+    -- Validate member type
+    IF p_member_type IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20010, 'Member type cannot be NULL.');
+    ELSIF UPPER(p_member_type) NOT IN ('NORMAL', 'VIP') THEN
+        RAISE_APPLICATION_ERROR(-20011, 'Member type must be NORMAL or VIP.');
+    END IF;
+
+    -- Insert new member
+    INSERT INTO member (
+        member_id,
+        member_name,
+        member_email,
+        phone,
+        member_type,
+        registration_date
+    )
+    VALUES (
+        p_member_id,
+        p_member_name,
+        p_member_email,
+        p_phone,
+        UPPER(p_member_type),
+        SYSDATE
+    );
+
+    DBMS_OUTPUT.PUT_LINE('New member added successfully.');
+END;
+/
+
+--Testing Purpose Only :)
+BEGIN
+    add_new_member_validation(
+        'M030',
+        'Selly Wong',
+        'sellywong1234@gmail.com',
+        '+6012-3456987',
+        'VIP'
+    );
+END;
+/
+
+SELECT * 
+FROM member
+WHERE member_id = 'M030';
